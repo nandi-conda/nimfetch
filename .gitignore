@@ -1,0 +1,4 @@
+nimfetch
+bin/
+nimcache/
+tests/test_nimfetch
