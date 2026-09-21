@@ -71,6 +71,8 @@ proc main() =
     return
 
   if logoName.len == 0: logoName = osRelease().id
+  # Garuda is Arch-based and should use the Arch mark by default.
+  if logoName == "garuda": logoName = "arch"
   if logoName notin ["arch", "ubuntu", "debian", "fedora", "linux"]: logoName = "linux"
   let logo = if options.logo: logoFor(logoName) else: @[]
   var displayRows: seq[DisplayRow]
