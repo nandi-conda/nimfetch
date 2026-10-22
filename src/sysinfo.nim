@@ -19,7 +19,10 @@ proc command(cmd: string): string =
 
 proc osRelease*(): tuple[name, id: string] =
   result = (hostOS.capitalizeAscii, hostOS)
-  when defined(linux):
+  when defined(android):
+    let release = command("getprop ro.build.version.release")
+    if release.len > 0: result.name = "Android " & release
+  elif defined(linux):
     for line in readFirst("/etc/os-release").splitLines:
       let pos = line.find('=')
       if pos < 1: continue

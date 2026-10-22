@@ -13,12 +13,30 @@ source:
 build:
   number: 0
   script:
-    - mkdir -p "$PREFIX/bin"
-    - nim c -d:release --opt:speed --hints:off --nimcache:"$SRC_DIR/nimcache" -o:"$PREFIX/bin/nimfetch" src/nimfetch.nim
+    env:
+      # Android builds cross-compile with the NDK preinstalled on GitHub's Ubuntu runners.
+      ANDROID_NDK: ${{ env.get("ANDROID_NDK_LATEST_HOME", default="") }}
+    content:
+      - mkdir -p "$PREFIX/bin"
+      - if: android
+        then:
+          - |
+            case "$target_platform" in
+              android-aarch64) triple=aarch64-linux-android; cpu=arm64 ;;
+              android-armv7a) triple=armv7a-linux-androideabi; cpu=arm ;;
+              android-64) triple=x86_64-linux-android; cpu=amd64 ;;
+              android-32) triple=i686-linux-android; cpu=i386 ;;
+            esac
+          - cc="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/${triple}${ANDROID_API_LEVEL}-clang"
+          - nim c -d:release --opt:speed --hints:off --os:android --cpu:$cpu --cc:clang --clang.exe:"$cc" --clang.linkerexe:"$cc" --nimcache:"$SRC_DIR/nimcache" -o:"$PREFIX/bin/nimfetch" src/nimfetch.nim
+        else:
+          - nim c -d:release --opt:speed --hints:off --nimcache:"$SRC_DIR/nimcache" -o:"$PREFIX/bin/nimfetch" src/nimfetch.nim
 
 requirements:
   build:
-    - ${{ compiler('c') }}
+    - if: android
+      then: patchelf
+      else: ${{ compiler('c') }}
     - nim >=2.0.0
 
 tests:
