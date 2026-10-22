@@ -1,14 +1,13 @@
 import std/[json, os, sequtils, strutils, terminal]
-import sysinfo
+import layout, sysinfo
 
-const Version = "0.1.0"
+const
+  Version = "0.1.1"
+  MinInfoWidth = 30  # narrower than this beside the logo and the logo is hidden
+  MinValueWidth = 12 # narrower than this after the key and values move under it
 
 type Options = object
   logo, color, json: bool
-
-type DisplayRow = object
-  key, value: string
-  isTitle, isSeparator, isPalette: bool
 
 proc logoFor(name: string): seq[string] =
   case name
@@ -74,34 +73,42 @@ proc main() =
   # Garuda is Arch-based and should use the Arch mark by default.
   if logoName == "garuda": logoName = "arch"
   if logoName notin ["arch", "ubuntu", "debian", "fedora", "linux"]: logoName = "linux"
-  let logo = if options.logo: logoFor(logoName) else: @[]
-  var displayRows: seq[DisplayRow]
+  var logo = if options.logo: logoFor(logoName) else: @[]
+  var width = if logo.len > 0: logo.mapIt(it.len).max + 4 else: 0
+  # Wrap only for an interactive terminal (or an explicit COLUMNS) so piped
+  # output keeps whole lines.
+  let columns = if isatty(stdout) or existsEnv("COLUMNS"): terminalWidth() else: 0
+  # On narrow screens the logo would squeeze the info into a sliver; drop it.
+  if columns > 0 and logo.len > 0 and columns - width < MinInfoWidth:
+    logo = @[]
+    width = 0
+  let infoWidth = if columns > 0: max(columns - width, 1) else: 0
+
+  var lines: seq[string]
   for item in info:
     if item.key == "Title":
-      displayRows.add DisplayRow(value: item.value, isTitle: true)
-      displayRows.add DisplayRow(value: "-".repeat(item.value.len), isSeparator: true)
+      let title = wrapText(item.value, infoWidth)
+      for part in title: lines.add colored(part, "32;1", options.color)
+      let ruleLen = title.mapIt(it.displayLen).max
+      lines.add colored("-".repeat(ruleLen), "32", options.color)
     else:
-      displayRows.add DisplayRow(key: item.key, value: item.value)
-  displayRows.add DisplayRow(value: "● ● ● ● ● ● ● ●", isPalette: true)
+      let key = colored(item.key & ":", "34;1", options.color)
+      let indent = item.key.len + 2
+      if infoWidth == 0 or infoWidth - indent >= MinValueWidth:
+        # Continuation lines align under the start of the value.
+        let parts = wrapText(item.value, infoWidth - indent)
+        lines.add key & " " & parts[0]
+        for part in parts[1 .. ^1]: lines.add " ".repeat(indent) & part
+      else:
+        # Too narrow for the key and value side by side: value goes below.
+        lines.add key
+        for part in wrapText(item.value, infoWidth - 2): lines.add "  " & part
+  lines.add colored("● ● ● ● ● ● ● ●", "36;1", options.color)
 
-  let rows = max(logo.len, displayRows.len)
-  let width = if logo.len > 0: logo.mapIt(it.len).max + 4 else: 0
-
-  for i in 0 ..< rows:
+  for i in 0 ..< max(logo.len, lines.len):
     let left = if i < logo.len: colored(logo[i].alignLeft(width), "36;1", options.color)
                else: " ".repeat(width)
-    if i < displayRows.len:
-      let row = displayRows[i]
-      if row.isTitle:
-        echo left, colored(row.value, "32;1", options.color)
-      elif row.isSeparator:
-        echo left, colored(row.value, "32", options.color)
-      elif row.isPalette:
-        echo left, colored(row.value, "36;1", options.color)
-      else:
-        echo left, colored(row.key & ":", "34;1", options.color), " ", row.value
-    else:
-      echo left
+    if i < lines.len: echo left, lines[i] else: echo left
 
 when isMainModule:
   main()

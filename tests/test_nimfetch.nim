@@ -1,5 +1,5 @@
 import std/[unittest]
-import sysinfo
+import layout, sysinfo
 
 suite "nimfetch helpers":
   test "formats byte quantities":
@@ -17,3 +17,14 @@ suite "nimfetch helpers":
     check info.len >= 10
     check info[0].key == "Title"
     check info[1].key == "OS"
+
+  test "wraps long values at word boundaries":
+    check wrapText("short", 20) == @["short"]
+    check wrapText("Intel Core i7-8550U @ 1.80GHz", 12) ==
+      @["Intel Core", "i7-8550U @", "1.80GHz"]
+    check wrapText("abcdefghij", 4) == @["abcd", "efgh", "ij"]
+    check wrapText("no limit here", 0) == @["no limit here"]
+
+  test "measures visible width":
+    check displayLen("\e[34;1mOS:\e[0m") == 3
+    check displayLen("● ●") == 3

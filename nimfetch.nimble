@@ -1,4 +1,4 @@
-version       = "0.1.0"
+version       = "0.1.1"
 author        = "nimfetch contributors"
 description   = "A fast, dependency-free system information tool written in Nim"
 license       = "MIT"
