@@ -28,7 +28,8 @@ build:
               android-32) triple=i686-linux-android; cpu=i386 ;;
             esac
           - cc="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/${triple}${ANDROID_API_LEVEL}-clang"
-          - nim c -d:release --opt:speed --hints:off --os:android --cpu:$cpu --cc:clang --clang.exe:"$cc" --clang.linkerexe:"$cc" --nimcache:"$SRC_DIR/nimcache" -o:"$PREFIX/bin/nimfetch" src/nimfetch.nim
+          # Bionic only has posix_spawn from API 28; fork keeps Android 7+ (API 24) working.
+          - nim c -d:release -d:useFork --opt:speed --hints:off --os:android --cpu:$cpu --cc:clang --clang.exe:"$cc" --clang.linkerexe:"$cc" --nimcache:"$SRC_DIR/nimcache" -o:"$PREFIX/bin/nimfetch" src/nimfetch.nim
         else:
           - nim c -d:release --opt:speed --hints:off --nimcache:"$SRC_DIR/nimcache" -o:"$PREFIX/bin/nimfetch" src/nimfetch.nim
 
