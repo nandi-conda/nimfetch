@@ -77,7 +77,7 @@ proc main() =
   var width = if logo.len > 0: logo.mapIt(it.len).max + 4 else: 0
   # Wrap only for an interactive terminal (or an explicit COLUMNS) so piped
   # output keeps whole lines.
-  let columns = if isatty(stdout) or existsEnv("COLUMNS"): terminalWidth() else: 0
+  let columns = if isatty(stdout) or existsEnv("COLUMNS"): terminalColumns() else: 0
   # On narrow screens the logo would squeeze the info into a sliver; drop it.
   if columns > 0 and logo.len > 0 and columns - width < MinInfoWidth:
     logo = @[]
