@@ -1,0 +1,35 @@
+# Built and published to prefix.dev by .github/workflows/package.yml.
+context:
+  version: "0.1.0"
+
+package:
+  name: nimfetch
+  version: ${{ version }}
+
+source:
+  path: .
+  use_gitignore: true
+
+build:
+  number: 0
+  script:
+    - mkdir -p "$PREFIX/bin"
+    - nim c -d:release --opt:speed --hints:off --nimcache:"$SRC_DIR/nimcache" -o:"$PREFIX/bin/nimfetch" src/nimfetch.nim
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - nim >=2.0.0
+
+tests:
+  - script:
+      - test "$(nimfetch --version)" = "${{ version }}"
+      - nimfetch --json
+      - nimfetch --no-color
+
+about:
+  homepage: https://github.com/nandi-conda/nimfetch
+  repository: https://github.com/nandi-conda/nimfetch
+  license: MIT
+  license_file: LICENSE
+  summary: A fast, dependency-free system information tool written in Nim
